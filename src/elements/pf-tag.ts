@@ -62,8 +62,8 @@ export class PFTag extends LitElement {
       css`
         :host {
           display: inline-block;
-          background: var(--canvas-bg-gray);
-          color: var(--canvas-fg-gray);
+          background: var(--canvas-bg-extreme);
+          color: var(--canvas-fg-extreme);
           padding: 0.3rem 0.7rem;
         }
 

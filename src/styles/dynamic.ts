@@ -240,7 +240,9 @@ const updateDynamicCssVariables = () => {
     // Currently not constrast checking these
     const canvasBgGray = canvasBg.desaturate(0.9);
     const canvasFgGray = canvasFg.desaturate(0.9);
-    
+    const canvasBgExtreme = canvasIsDark ? black : white;
+    const canvasFgExtreme = canvasIsDark ? white : black;
+
     const fieldBgRotation = canvasBgRotation + 30;
     const [fieldBg, fieldFg] = adjustedColorPair(fieldBgRotation, [180-30, 180+30], 40, 15);
     const fieldFgGray = fieldFg.desaturate(0.9);
@@ -252,8 +254,10 @@ const updateDynamicCssVariables = () => {
     const vars: [string,Color][] = [
       ['canvas-bg', canvasBg],
       ['canvas-bg-gray', canvasBgGray],
+      ['canvas-bg-extreme', canvasBgExtreme],
       ['canvas-fg', canvasFg],
       ['canvas-fg-gray',canvasFgGray],
+      ['canvas-fg-extreme', canvasFgExtreme],
 
       ['field-bg', fieldBg],
       ['field-fg', fieldFg],
@@ -266,10 +270,12 @@ const updateDynamicCssVariables = () => {
 
     rgbColors.forEach((name, rotate30) => {
       const bg = findCloseMatch(canvasBg, rotate30 * 30);
+      const bgAdjusted = adjustSaturationLightnessTowardsOkContrast(canvasFgExtreme, bg, 100, 10);
       const fg = findCloseMatch(canvasFg, rotate30 * 30);
+      const fgAdjusted = adjustSaturationLightnessTowardsOkContrast(canvasBgExtreme, fg, 100, 10);
       vars.push(
-        [`named-${name}-bg`, bg],
-        [`named-${name}-fg`, fg],
+        [`named-${name}-bg`, bgAdjusted],
+        [`named-${name}-fg`, fgAdjusted],
       );
     });
 

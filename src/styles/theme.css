@@ -50,7 +50,6 @@ body {
   --button-border:          ButtonBorder;     /* Base border color of controls */
   --button-bg:              ButtonFace;       /* Background color of controls */
   --button-fg:              ButtonText;       /* Text color of controls */
-  --button-fg-gray:         CanvasText;
   --canvas-bg:              Canvas;           /* Background of application content or documents */
   --canvas-bg-gray:         Canvas;
   --canvas-fg:              CanvasText;       /* Text color in application content or documents */

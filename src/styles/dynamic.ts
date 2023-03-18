@@ -243,6 +243,10 @@ const updateDynamicCssVariables = () => {
     const canvasBgExtreme = canvasIsDark ? black : white;
     const canvasFgExtreme = canvasIsDark ? white : black;
 
+    const buttonBgRotation = canvasBgRotation - 30;
+    const [buttonBg, buttonFg] = adjustedColorPair(buttonBgRotation, [180-60, 180+60], 30, 25);
+    const buttonBorder = recommendations(buttonBg) === 'use-white' ? buttonBg.lighten(0.1) : buttonBg.darken(0.1);
+
     const fieldBgRotation = canvasBgRotation + 30;
     const [fieldBg, fieldFg] = adjustedColorPair(fieldBgRotation, [180-30, 180+30], 40, 15);
     const fieldFgGray = fieldFg.desaturate(0.9);
@@ -258,6 +262,10 @@ const updateDynamicCssVariables = () => {
       ['canvas-fg', canvasFg],
       ['canvas-fg-gray',canvasFgGray],
       ['canvas-fg-extreme', canvasFgExtreme],
+
+      ['button-bg', buttonBg],
+      ['button-fg', buttonFg],
+      ['button-border', buttonBorder],
 
       ['field-bg', fieldBg],
       ['field-fg', fieldFg],

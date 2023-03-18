@@ -153,10 +153,12 @@ export class PFSelectionCard extends LitElement {
         color: var(--canvas-fg);
         container-type: inline-size;
 
-        --button-primary-background: hsla(var(--button-bg-hsl), .5);
-        --button-primary-border: solid 2px hsla(var(--button-fg-hsl), .8);
-        --button-secondary-background: hsla(var(--button-bg-gray-hsl), .5);
-        --button-secondary-border: solid 2px hsla(var(--button-fg-gray-hsl), .8);      
+        --button-primary-fg: var(--button-fg);
+        --button-primary-bg: hsla(var(--button-bg-hsl), .5);
+        --button-primary-border: solid 2px hsla(var(--button-bg-hsl), .8);
+        --button-secondary-fg: var(--field-fg);
+        --button-secondary-bg: hsla(var(--field-bg-hsl), .5);
+        --button-secondary-border: solid 2px hsla(var(--field-bg-hsl), .8);      
       }
 
       header {
@@ -196,7 +198,8 @@ export class PFSelectionCard extends LitElement {
       }
       footer button {
         border: var(--button-secondary-border);
-        background: var(--button-secondary-background);
+        color: var(--button-secondary-fg);
+        background: var(--button-secondary-bg);
 
         flex-grow: 1;
         padding: 16px 0;
@@ -205,7 +208,8 @@ export class PFSelectionCard extends LitElement {
       }
       footer button.choose {
         border: var(--button-primary-border);
-        background: var(--button-primary-background);
+        color: var(--button-primary-fg);
+        background: var(--button-primary-bg);
       }
       footer button:first-child {
         border-bottom-left-radius: 32px;

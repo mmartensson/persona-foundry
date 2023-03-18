@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="hsl(24.3, 97.4%, 54.3%)">
+
+    <title>Persona Foundry</title>
+    <style>
+      html {
+        background: #777;
+        color: #aaf;
+      }
+      body:not([loaded]) {
+        background: linear-gradient(45deg, #660, #000, #001, #000, #660);
+        background-size: 150% 150%;
+        animation: gradient 5s ease infinite;
+        height: 100vh;
+        margin: 0;
+        text-shadow: -1px -1px 0 #fff, 1px -1px 0 #333, -1px 1px 0 #111, 1px 1px 0 #222;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10vw;
+        font-family: system-ui, sans-serif;
+      }
+      body[loaded] #loading {
+        display: none; 
+      }
+      @keyframes gradient {
+        0%   { background-position: 10% 0%   }
+        50%  { background-position: 91% 100% }
+        100% { background-position: 10% 0%   }
+      }        
+    </style>
+    <script type="module" defer src="/src/pf-main.ts"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tourney&text=PersonaFoundry&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Mynerve&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="loading">Loading...</div>
+    <pf-main level="0"></pf-main>
+    <noscript>This is a client-only web application that requires Javascript to work.</noscript>
+  </body>
+</html>

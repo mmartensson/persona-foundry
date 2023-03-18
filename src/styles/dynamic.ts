@@ -240,8 +240,15 @@ const updateDynamicCssVariables = () => {
     // Currently not constrast checking these
     const canvasBgGray = canvasBg.desaturate(0.9);
     const canvasFgGray = canvasFg.desaturate(0.9);
+
     const canvasBgExtreme = canvasIsDark ? black : white;
     const canvasFgExtreme = canvasIsDark ? white : black;
+
+    // The idea is that accent fg/bg should work together, but also with canvas bg/fg respectively
+    const accentBgRotation = canvasBgRotation - 90;
+    const [accentBg, accentFg] = adjustedColorPair(accentBgRotation, [180], 100, 20);
+    const adjustedAccentBg = adjustSaturationLightnessTowardsOkContrast(canvasBg, accentBg, 100, 20);
+    const adjustedAccentFg = adjustSaturationLightnessTowardsOkContrast(canvasBg, accentFg, 100, 20);
 
     const buttonBgRotation = canvasBgRotation - 30;
     const [buttonBg, buttonFg] = adjustedColorPair(buttonBgRotation, [180-60, 180+60], 30, 25);
@@ -262,6 +269,9 @@ const updateDynamicCssVariables = () => {
       ['canvas-fg', canvasFg],
       ['canvas-fg-gray',canvasFgGray],
       ['canvas-fg-extreme', canvasFgExtreme],
+
+      ['accent-bg', adjustedAccentBg],
+      ['accent-fg', adjustedAccentFg],
 
       ['button-bg', buttonBg],
       ['button-fg', buttonFg],

@@ -41,6 +41,9 @@ export class PFTip extends LitElement {
       animation: 'fade',
       trigger: 'mouseenter',
       interactive: true,
+      // FIXME: Even with zIndex maxed out, tippy will be rendered below components
+      //        rendered after `element` in the DOM.
+      zIndex: Number.MAX_SAFE_INTEGER,
       appendTo: this.shadowRoot as unknown as Element
     });
   }

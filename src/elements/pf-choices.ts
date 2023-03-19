@@ -1,8 +1,10 @@
 import { LitElement, css, html, TemplateResult, nothing } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
-import { AbilityChoice, Choice, chooseName, ClabChoice, currentLevel, currentlyMadeChoice, 
-         FeatChoice, LanguageChoice, ProficiencyChoice, levelUp, makeChoice } from '../state';
+import { Choice, AbilityChoice, ClabChoice, FeatChoice, LanguageChoice, ProficiencyChoice, 
+         currentName, chooseName,
+         currentlyMadeChoice, makeChoice,
+         currentLevel, levelUp } from '../state';
 import { classabilities, isClassabilityID } from '../data/classabilities';
 import { feats, isFeatID } from '../data/feats';
 import { languages, isLanguageID } from '../data/languages';
@@ -49,6 +51,7 @@ export class PFChoices extends LitElement {
         <header>Identity</header>
         <label class="label">Name
           <input class="input" type="text" placeholder="Character name"
+              value=${currentName()}
               @input=${(e: InputEvent) => chooseName((e.target as HTMLInputElement).value)}>
         </label>
       </article>

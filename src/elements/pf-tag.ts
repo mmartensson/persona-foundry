@@ -5,7 +5,7 @@ import { Rarity } from '../data/shared_types';
 import { TableRow } from '../data/table_metadata';
 import { rgbColors } from '../styles/dynamic';
 
-export type TagColor = typeof rgbColors | 'gray';
+export type TagColor = typeof rgbColors[number] | 'gray';
 
 @customElement('pf-tag')
 export class PFTag extends LitElement {

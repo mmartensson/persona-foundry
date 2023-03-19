@@ -94,7 +94,7 @@ export const rgbColors = [
   'violet',         // T
   'magenta',        // S
   'rose',           // T
-];
+] as const;
 
 // Other terminology (HSL):
 // Tint   +L (more white)

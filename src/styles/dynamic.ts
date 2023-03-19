@@ -1,5 +1,6 @@
 import { LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
+import { extractColors } from 'extract-colors'
 
 import Color from 'color';
 import themeCss from './theme.css?inline';
@@ -42,6 +43,7 @@ const dynamicSheet = new CSSStyleSheet();
 //let currentMasterColor = new Color("hsl(206deg,24%,13%)");
 //let currentMasterColor = new Color("hsl(256deg,30%,73%)"); // hue becomes 257... rounding errors?
 let currentMasterColor = new Color("#192229");
+let backgroundImage: string;
 
 export const updateMasterColor = (color: Color | string) => {
   if (typeof color === 'string') {
@@ -55,9 +57,23 @@ export const updateMasterColor = (color: Color | string) => {
     currentMasterColor = color;
   }
   updateDynamicCssVariables();
+
+  themeSheet.replaceSync(`
+  :root {
+    --main-bg-image: url(${backgroundImage});
+    --main-bg-color: ${currentMasterHex() + 'b0'};
+  }
+  `+themeCss);
 }
 
 export const currentMasterHex = () => currentMasterColor.hex();
+
+export const updateBackgroundImage = (imageUrl: string) => {
+  backgroundImage = imageUrl;
+  extractColors(imageUrl, { distance: 1, crossOrigin: 'anonymous' }).then(list => {
+    updateMasterColor(list[0].hex);
+  }).catch(console.error);
+}
 
 // NOTE: Art class color wheel is based around R/Y/B primaries, but we are
 // software developers and not painters, so R/G/B are our primary colors.

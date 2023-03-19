@@ -9,9 +9,9 @@ body {
   min-height: 100vh;
 
   background: linear-gradient(
-    hsla(var(--pf-dim-background-base-hsl), 0.7), 
-    hsla(var(--pf-dim-background-base-hsl), 0.7)
-  ), var(--main-background-image, none);
+    var(--main-bg-color),
+    var(--main-bg-color)
+  ), var(--main-bg-image, none);
   background-attachment: fixed;
   background-repeat: no-repeat;
   background-size: cover;

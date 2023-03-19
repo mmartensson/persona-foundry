@@ -1,7 +1,6 @@
 import { css, html, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { ancestries } from './data/ancestries';
-import { extractColors } from 'extract-colors'
 
 import { DynamicLitElement } from './styles/dynamic';
 
@@ -21,7 +20,7 @@ import { chooseAncestry, chooseBackground, chooseClass, chooseHeritage, currentA
          currentBackground, currentClass, currentHeritage, makeExampleChoices, currentlyMadeChoice } from './state';
 import { uniheritages, UniheritagesTableRow } from './data/uniheritages';
 import { homebackgrounds } from './data/homebackgrounds';
-import { updateMasterColor } from './styles/dynamic';
+import { updateBackgroundImage, updateMasterColor } from './styles/dynamic';
 import { calculateSheet } from './calc';
 import { CalculatedSheet } from './calc/sheet';
 import { basicStyles } from './styles/shared';
@@ -207,13 +206,7 @@ export class PFMain extends DynamicLitElement {
     console.log(`New background image by ${name}`, artworkURL);
     this.backgroundArtist = name;
 
-    // FIXME: Move this into dynamic.ts; also base lightness on prefers-color-scheme
-    extractColors(artworkURL, { distance: 1, crossOrigin: 'anonymous' }).then(list => {
-      updateMasterColor(list[0].hex);
-    }).catch(console.error);
-
-    const root = document.querySelector(':root') as HTMLElement;
-    root.style.setProperty('--main-background-image', `url(${artworkURL})`);  
+    updateBackgroundImage(artworkURL);
   }
 
   navigationTabs(): RenderableTab<NavigationTabs>[] {

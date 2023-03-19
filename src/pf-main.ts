@@ -20,7 +20,7 @@ import { chooseAncestry, chooseBackground, chooseClass, chooseHeritage, currentA
          currentBackground, currentClass, currentHeritage, makeExampleChoices, currentlyMadeChoice } from './state';
 import { uniheritages, UniheritagesTableRow } from './data/uniheritages';
 import { homebackgrounds } from './data/homebackgrounds';
-import { updateBackgroundImage, updateMasterColor } from './styles/dynamic';
+import { updateBackgroundImage } from './styles/dynamic';
 import { calculateSheet } from './calc';
 import { CalculatedSheet } from './calc/sheet';
 import { basicStyles } from './styles/shared';
@@ -40,7 +40,7 @@ type RenderableTab<T> = Tab<T> & {
 
 (document.querySelector('body') as HTMLBodyElement).setAttribute('loaded', '');
 
-const initDevMode = true;
+const initDevMode = false;
 
 @customElement('pf-main')
 export class PFMain extends DynamicLitElement {
@@ -297,7 +297,7 @@ export class PFMain extends DynamicLitElement {
         render() {
           return html`<pf-sheet></pf-sheet>`;
         }
-      },
+      },/*
       {
         name: 'test',
         title: 'Test',
@@ -321,7 +321,7 @@ export class PFMain extends DynamicLitElement {
           </div> 
           `;
         }
-      },
+      },*/
     ];
     return tabs;
   }  

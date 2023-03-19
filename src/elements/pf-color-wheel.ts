@@ -25,7 +25,6 @@ export class PFColorWheel extends LitElement {
     const radius = 30;
 
     const renderArc = (offset: number, desc: string) => {
-      console.log({offset,desc});
       const rs = (Math.PI as number) / 180 * (offset-14);
       const re = (Math.PI as number) / 180 * (offset+15);
 

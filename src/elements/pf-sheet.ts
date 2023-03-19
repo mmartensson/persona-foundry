@@ -180,22 +180,36 @@ export class PFSheet extends LitElement {
 
       return { metadata, rank, ability, abilityScore, abilityModifier, proficiencyModifier, totalModifier};
     }
+
+    const loreProfs = availableProficiencies.filter(p => p.name.startsWith('lore~'))
+      .sort((a,b) => a.displayName.localeCompare(b.displayName));
     
     const skillHeight = 78; // including gap and heading
     ['acrobatics', 'arcana', 'athletics', 'crafting',
      'deception', 'diplomacy', 'intimidation',
-     'lore:1', 'lore:2', 'medicine', 'nature',
+     'lore:0', 'lore:1', 'medicine', 'nature',
      'occultism', 'performance', 'religion', 'society',
      'stealth', 'survival', 'thievery'].forEach((skill,index) => {
+
+      const y = index * skillHeight + 1235;
+
       if (skill.startsWith('lore')) {
-        // TODO: Deal with Lore/Knowledge
-        return;
+        const loreIndex = +skill.substring(5);
+        if (loreProfs.length <= loreIndex) return;
+
+        const loreProf = loreProfs[loreIndex];
+        console.log('LORE? ', skill, loreIndex, loreProf);
+
+        scribbles.push(
+          text(1150, y, 185, 50, `${loreProf.displayName} Lore`, loreProf.displayName),
+        );  
+
+        // Run the regular modifier code with this specific lore
+        skill = loreProf.name;
       }
 
       const { rank, ability, abilityModifier, proficiencyModifier, totalModifier} 
         = proficiencyHelper(skill);
-
-      const y = index * skillHeight + 1235;
 
       scribbles.push(
         text(1580, y, 84, 50, `${ability} Modifier for ${skill} is ${abilityModifier}`, abilityModifier),
@@ -311,7 +325,7 @@ export class PFSheet extends LitElement {
           <path fill="url(#d)" d="M 402 38 L 707 39 L 705 323 C 705 323 443 329 407 308 C 399 271 402 38 402 38 Z" enable-background="accumulate" overflow="visible" style="marker:none"></path>
         </g>
         <rect width="67.5" height="18.8" x="270" y="290" fill="none" enable-background="accumulate" opacity=".4" overflow="visible" ry="4.3" style="marker:none"></rect>
-        <foreignObject x="20" y="20" width="160" height="160">
+        <foreignObject x="20" y="16" width="256" height="256">
         ${
           [...s.physicalFeatures.value]
             .map(id => physicalfeatures.byId(id))

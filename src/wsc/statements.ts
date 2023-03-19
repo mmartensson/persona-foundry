@@ -8,6 +8,8 @@ import type { Ability, Feat, Level,
               SignedAdjustment, Size, SpeedType, SpellcastingType, 
               SpellSlotAlgorithm, SpellTradition, StatAdjustType, Traits } from './types';
 import { Language, Skill, abilityNames, isAbility } from '../tables';
+import { sensetypes } from '../data/sensetypes';
+import { physicalfeatures } from '../data/physicalfeatures';
 
 const assertDefined: <T>(v: T) => asserts v is NonNullable<T> = v => { if (v === undefined) throw new Error() }
 const namedTrait = (n: string) => { const t = tags.byNameUnique(n); assertDefined(t); return t }
@@ -210,7 +212,7 @@ class StatementCallProcessorImplementation implements StatementCallProcessor, Su
     const [name, _] = feat;
     const row = feats.byNameUnique(name);
     if (row) {
-      console.log('Giving new feat', row);
+      console.log('Giving new feat; should possibly be filtered for prerequisites', row);
 
       // NOTE: skillID means we need to be trained in that skill
       //       "prerequisites": "master in Nature" (freetext; assuming just for display)
@@ -265,9 +267,32 @@ class StatementCallProcessorImplementation implements StatementCallProcessor, Su
       });
   }
 
-  giveFeatFrom(text: string, choices: readonly string[]) { console.log(`Showing '${text}', picking feat from ${choices.join(', ')}`) }
-  giveFeat(level: Level, traits: readonly string[]) { console.log(`Choice of feat <= ${level} with traits matching ${traits.join(', ')}`) }
-  giveGeneralFeat(level: Level, traits: Traits) { console.log('Choice of general feat <= ', level, traits) }
+  giveFeatFrom(text: string, choices: readonly string[]) {
+    const options: FeatChoice['options'] = choices.map(name => {
+      const row = feats.byNameUnique(name);
+      if (row) {
+        return row.id;
+      } else {
+        // In reality we will find things like:
+
+        // "Living Weapon - Claws" which matches no feat at all. 
+        // * It is given by the feat "Living Weapon".
+        // * It matches "Living Weapon" as an item and weapon type/proficiency.
+        // * Should probably have been
+        //   "GIVE-PHYSICAL-FEATURE-NAME=Claws" 
+        //   "GIVE-PROF-IN=WEAPON~Living Weapon:E"
+        //   but automatic heuristics for similar cases is not something that will be attempted
+
+        throw new Error(`Assumed database correctness at this point; but found no feat named ${name}`);
+      }
+    });
+
+    // FIXME: Figure out how to best forward text to make it pretty on the choices tab
+    this.#featChoice(options, `"${text}"`);
+  }
+
+  giveFeat(level: Level, traits: readonly string[]) { console.log(`👷Choice of feat <= ${level} with traits matching ${traits.join(', ')}`) }
+  giveGeneralFeat(level: Level, traits: Traits) { console.log('👷Choice of general feat <= ', level, traits) }
   
   giveSkillFeat(level: Level, traits: Traits) { 
     const subset = this.#featSubset(level, [SKILL_TAG_ID], [GENERAL_TAG_ID], true, traits);
@@ -276,7 +301,7 @@ class StatementCallProcessorImplementation implements StatementCallProcessor, Su
     this.#featChoice(options, 'Skill');
   }
   
-  giveAncestryFeat(level: Level, traits: Traits) { console.log('Choice of ancestry feat <= ', level, traits) }
+  giveAncestryFeat(level: Level, traits: Traits) { console.log('👷Choice of ancestry feat <= ', level, traits) }
   
   giveClassFeat(level: Level, traits: Traits) {
     const cls = currentClass();
@@ -306,7 +331,7 @@ class StatementCallProcessorImplementation implements StatementCallProcessor, Su
     this.#featChoice(options, 'Class');
   }
 
-  giveArchetypeFeat(level: Level, traits: Traits) { console.log('Choice of archetype feat <= ', level, traits) }
+  giveArchetypeFeat(level: Level, traits: Traits) { console.log('👷Choice of archetype feat <= ', level, traits) }
 
   // Languages
   giveLangName(name: Language) {
@@ -314,12 +339,12 @@ class StatementCallProcessorImplementation implements StatementCallProcessor, Su
     if (row) {
       this.#sheet.languages.adjust({id: row.id}, this.#ref, this.#description);
     } else {
-      console.warn('Unable to find feat matching GIVE-LANG-NAME', name);
+      console.warn('Unable to find language matching GIVE-LANG-NAME', name);
     }
   }
 
-  giveLangBonusOnly() { console.log(`Choice of language, the ancestry's bonus languages as options.`) }
-  giveLang() { console.log('Free choice of language') }
+  giveLangBonusOnly() { console.log(`👷Choice of language, the ancestry's bonus languages as options.`) }
+  giveLang() { console.log('👷Free choice of language') }
 
   // Proficiencies
   giveProfIn(prof: string, rank: Rank) {
@@ -331,47 +356,85 @@ class StatementCallProcessorImplementation implements StatementCallProcessor, Su
   }
 
   // Skills
-  giveSkillIncrease() { console.log('Free choice of valid skill increase; Minimum level of 7 to increase a skill to master and 15 to increase to legendary') }
-  giveSkill(rank: Rank, choices: Skill[]) { console.log(`Choice of valid skill to get rank ${rank} in`, choices.length === 0 ? '(free choice)' : `limited to ${choices}`) }
+  giveSkillIncrease() { console.log('👷Free choice of valid skill increase; Minimum level of 7 to increase a skill to master and 15 to increase to legendary') }
+  giveSkill(rank: Rank, choices: Skill[]) { console.log(`👷Choice of valid skill to get rank ${rank} in`, choices.length === 0 ? '(free choice)' : `limited to ${choices}`) }
 
   // Lore
-  giveLore(lore: string) { console.log(`Giving lore ${lore}`) }
-  giveLoreChoose() { console.log('A new trained lore, entered by the user') }
-  giveLoreChooseIncreasing() { console.log('A new trained lore, entered by the user; At 3rd level they become expert, at 7th they become master, and at 15th they become legendary') }
+  giveLore(lore: string) {
+    console.log(`👷Giving lore ${lore}`);
+
+    const prof = `lore~${lore.toLowerCase()}`;
+    const currentProfs = this.#sheet.proficiencies.list();
+    if (currentProfs.some(p => p.name === prof)) {
+      // Already have the lore/knowledge registered, and GIVE-LORE does not automatically upgrade
+      return;
+    }
+
+    this.#sheet.proficiencies.registerProficiency(prof, lore, 'skills', 'INT');
+    this.#sheet.proficiencies.adjustRank(prof, 'increase', this.#ref, this.#description);
+  }
+  
+  giveLoreChoose() { console.log('👷A new trained lore, entered by the user') }
+  giveLoreChooseIncreasing() { console.log('👷A new trained lore, entered by the user; At 3rd level they become expert, at 7th they become master, and at 15th they become legendary') }
 
   // Spells
-  setSpellCastingType(source: string, type: SpellcastingType) { console.log(`Setting ${source} spellcasting source to ${type}`) }
-  setSpellTradition(source: string, tradition: SpellTradition) { console.log(`Setting ${source} spell tradition to ${tradition}`) }
-  setSpellKeyAbility(source: string, ability: Ability) { console.log(`Setting ${source} key spell ability to ${ability}`) }
-  setSpellSlots(source: string, algo: SpellSlotAlgorithm) { console.log(`Setting ${source} spell slot algorithm to ${algo}`) }
-  giveSpellSlot(source: string, spellLevel: number) { console.log(`Giving a ${source} spell slot of levell ${spellLevel}`) }
-  addSpellToList(source: string, spell: string, spellLevel: number|null) { console.log(`Adding "${spell}" at level ${spellLevel} to the ${source} spell list`) }
-  giveFocusSpell(source: string, spell: string) { console.log(`Adding "${spell}" as focus spell using the ${source} source`) }
-  giveFocusPoint() { console.log(`Increases the focus pool by one point`) }
-  giveInnateSpellName(spell:string, spellLevel: number, tradition: SpellTradition, perDay: number) { console.log(`Gives ${spell} level ${spellLevel} as an innate ${tradition} spell; can be cast ${perDay === 0 ? 'any number of' : perDay} times per day`) }
-  giveInnateSpell(spellLevel: number, tradition: SpellTradition, perDay: number) { console.log(`Choice of any ${spellLevel} ${tradition} spell as innate spell; can be cast ${perDay === 0 ? 'any number of' : perDay} times per day`) }
+  setSpellCastingType(source: string, type: SpellcastingType) { console.log(`👷Setting ${source} spellcasting source to ${type}`) }
+  setSpellTradition(source: string, tradition: SpellTradition) { console.log(`👷Setting ${source} spell tradition to ${tradition}`) }
+  setSpellKeyAbility(source: string, ability: Ability) { console.log(`👷Setting ${source} key spell ability to ${ability}`) }
+  setSpellSlots(source: string, algo: SpellSlotAlgorithm) { console.log(`👷Setting ${source} spell slot algorithm to ${algo}`) }
+  giveSpellSlot(source: string, spellLevel: number) { console.log(`👷Giving a ${source} spell slot of levell ${spellLevel}`) }
+  addSpellToList(source: string, spell: string, spellLevel: number|null) { console.log(`👷Adding "${spell}" at level ${spellLevel} to the ${source} spell list`) }
+  giveFocusSpell(source: string, spell: string) { console.log(`👷Adding "${spell}" as focus spell using the ${source} source`) }
+  giveFocusPoint() { console.log(`👷Increases the focus pool by one point`) }
+  giveInnateSpellName(spell:string, spellLevel: number, tradition: SpellTradition, perDay: number) { console.log(`👷Gives ${spell} level ${spellLevel} as an innate ${tradition} spell; can be cast ${perDay === 0 ? 'any number of' : perDay} times per day`) }
+  giveInnateSpell(spellLevel: number, tradition: SpellTradition, perDay: number) { console.log(`👷Choice of any ${spellLevel} ${tradition} spell as innate spell; can be cast ${perDay === 0 ? 'any number of' : perDay} times per day`) }
 
   // Resistances and Weaknesses
-  giveResistance(resistance: string, level: Level) { console.log(`Gives ${resistance} resistance at level`, level) }
-  giveWeakness(weakness: string, level: Level) { console.log(`Gives ${weakness} weakness at level`, level) }
+  giveResistance(resistance: string, level: Level) { console.log(`👷Gives ${resistance} resistance at level`, level) }
+  giveWeakness(weakness: string, level: Level) { console.log(`👷Gives ${weakness} weakness at level`, level) }
 
   // Specializations
-  giveWeaponSpecialization() { console.log('Gives weapon specialization') }
-  giveGreaterWeaponSpecialization() { console.log('Gives greater weapon specialization') }
-  giveArmorSpecialization(prof: string) { console.log('Gives armor specialization', prof) }
-  giveWeaponCriticalSpecialization(prof: string) { console.log('Gives armor specialization', prof) }
+  giveWeaponSpecialization() { console.log('👷Gives weapon specialization') }
+  giveGreaterWeaponSpecialization() { console.log('👷Gives greater weapon specialization') }
+  giveArmorSpecialization(prof: string) { console.log('👷Gives armor specialization', prof) }
+  giveWeaponCriticalSpecialization(prof: string) { console.log('👷Gives armor specialization', prof) }
   
   // Miscellaneous
                                           // A class feature is likely from classabilities.ts, with options among the feats
-  giveClassFeatureName(feature: string, noCode: boolean) { console.log(`Adding class feature (or option) ${feature}; ${noCode ? 'skipping' : 'running'} associated code`) }
-  giveCharTraitName(charTrait: string) { console.log(`Adding character trait ${charTrait}`) }
-  giveCharTraitCommon() { console.log('Choice of any common ancestry trait') }
-  giveCharTrait() { console.log('Choice of any ancestry trait') }
-  giveDomain(source: string) { console.log(`Choice of domain for ${source}`) }
-  giveDomainAdvancement(source: string) { console.log(`Choice of current domain for ${source} to get advancement`) }
-                                          // Physical features are in physicalfeatures.ts
-  givePhysicalFeatureName(physFeature: string) { console.log(`Giving physical feature ${physFeature}`) }
-  giveSenseName(sense: string, imprecise: number|null) { console.log(`Giving sense ${sense}`, imprecise) }
+  giveClassFeatureName(feature: string, noCode: boolean) { console.log(`👷Adding class feature (or option) ${feature}; ${noCode ? 'skipping' : 'running'} associated code`) }
+  
+  giveCharTraitName(charTrait: string) { 
+    const row = tags.byNameUnique(charTrait);
+    if (row) {
+      this.#sheet.traits.adjust({id: row.id}, this.#ref, this.#description);
+    } else {
+      console.warn('Unable to find character trait matching GIVE-CHAR-TRAIT-NAME', charTrait);
+    }
+  }
+
+  giveCharTraitCommon() { console.log('👷Choice of any common ancestry trait') }
+  giveCharTrait() { console.log('👷Choice of any ancestry trait') }
+  giveDomain(source: string) { console.log(`👷Choice of domain for ${source}`) }
+  giveDomainAdvancement(source: string) { console.log(`👷Choice of current domain for ${source} to get advancement`) }
+
+  givePhysicalFeatureName(physFeature: string) { 
+    const row = physicalfeatures.byNameUnique(physFeature);
+    if (row) {
+      this.#sheet.physicalFeatures.adjust({id: row.id}, this.#ref, this.#description);
+    } else {
+      console.warn('Unable to find physical feature matching GIVE-PHYSICAL-FEATURE-NAME', physFeature);
+    }
+  }
+
+  giveSenseName(sense: string, imprecise: number|null) {
+    // TODO: Figure out what to do with the "imprecise" number found in some GIVE-SENSE-NAME calls
+    const row = sensetypes.byNameUnique(sense);
+    if (row) {
+      this.#sheet.senses.adjust({id: row.id}, this.#ref, this.#description);
+    } else {
+      console.warn('Unable to find sense matching GIVE-SENSE-NAME', sense);
+    }
+  }
 
   giveSpeed(type: SpeedType, speed: number | 'land_speed') {
     if (speed === 'land_speed') {
@@ -381,46 +444,46 @@ class StatementCallProcessorImplementation implements StatementCallProcessor, Su
     }
   }
 
-  giveHeritageEffectsAncestry(ancestry: string) { console.log(`Choice of heritage belonging to ${ancestry}; will gain effects`) }
-  giveHeritageEffectsName(heritage: string) { console.log(`Gains the effects of the ${heritage} heritage`) }
+  giveHeritageEffectsAncestry(ancestry: string) { console.log(`👷Choice of heritage belonging to ${ancestry}; will gain effects`) }
+  giveHeritageEffectsName(heritage: string) { console.log(`👷Gains the effects of the ${heritage} heritage`) }
                                           // Druidic Order etc are found in classabilities.ts; func is any key in this table
-  giveScfs(clab: string, func: string) { console.log(`Running the first ${func} of ${clab}`) }
-  clearDataFromCodeBlock() { console.log('Clearing everything having this code block as source') }
+  giveScfs(clab: string, func: string) { console.log(`👷Running the first ${func} of ${clab}`) }
+  clearDataFromCodeBlock() { console.log('👷Clearing everything having this code block as source') }
 
   // Sheet / Condition
-  giveCondition(condition:string, value:number|null) { console.log(`Giving condition ${condition}`, value) }
-  removeCondition(condition:string) { console.log(`Remving condition ${condition}`) }
+  giveCondition(condition:string, value:number|null) { console.log(`👷Giving condition ${condition}`, value) }
+  removeCondition(condition:string) { console.log(`👷Remving condition ${condition}`) }
 
   // Sheet / Item
-  defaultWeaponRune(adjustment:SignedAdjustment, rune: string) { console.log(`By default has weapon rune of ${rune}`, adjustment) }
-  defaultArmorRune(adjustment:SignedAdjustment, rune: string) { console.log(`By default has armor rune of ${rune}`, adjustment) }
+  defaultWeaponRune(adjustment:SignedAdjustment, rune: string) { console.log(`👷By default has weapon rune of ${rune}`, adjustment) }
+  defaultArmorRune(adjustment:SignedAdjustment, rune: string) { console.log(`👷By default has armor rune of ${rune}`, adjustment) }
 
   // Sheet / Stat Adjustments
       // ADJUST is any INCREASE/DECREASE with our without CONDITIONAL- prefix
   adjust(primary: string, secondary: string|null, adjust:number, type:StatAdjustType|null, conditional: string|null) { 
-    console.log(`Gives a ${primary}${secondary?` / ${secondary}`:''}${type ? ` ${type}`:''} ${adjust<0?'bonus':'penalty'} of ${adjust}`, conditional) 
+    console.log(`👷Gives a ${primary}${secondary?` / ${secondary}`:''}${type ? ` ${type}`:''} ${adjust<0?'bonus':'penalty'} of ${adjust}`, conditional) 
   }
 
-  adjustConditional(primary: string, secondary: string|null, text:string) { console.log(`Describes ${primary}${secondary?` / ${secondary}`:''} adjustment as "${text}"`) }
+  adjustConditional(primary: string, secondary: string|null, text:string) { console.log(`👷Describes ${primary}${secondary?` / ${secondary}`:''} adjustment as "${text}"`) }
 
   // Sheet / Misc
-  displayCompanionTab() { console.log('Displaying companion tab') }
-  giveWeaponFamiliarity(type: string) { console.log(`Giving familiarity with ${type} weapons`) }
-  setImprovisedWeaponNoPenalty() { console.log('No penalty for improvised weapons') }
-  setAddLevelToUntrainedWeapons() { console.log('Bonus to untrained weapons based on level') }
-  setFinesseMeleeUseDexDamage() { console.log('Finesse melee using DEX for damage') }
-  sheetConcealFeatName(name: string) { console.log('Hiding the feat', name) }
-  setSize(size: Size) { console.log('Setting size to', size) }
-  setMap(tier: number) { console.log('Multiple Attack Penalty set to tier', tier) }
+  displayCompanionTab() { console.log('👷Displaying companion tab') }
+  giveWeaponFamiliarity(type: string) { console.log(`👷Giving familiarity with ${type} weapons`) }
+  setImprovisedWeaponNoPenalty() { console.log('👷No penalty for improvised weapons') }
+  setAddLevelToUntrainedWeapons() { console.log('👷Bonus to untrained weapons based on level') }
+  setFinesseMeleeUseDexDamage() { console.log('👷Finesse melee using DEX for damage') }
+  sheetConcealFeatName(name: string) { console.log('👷Hiding the feat', name) }
+  setSize(size: Size) { console.log('👷Setting size to', size) }
+  setMap(tier: number) { console.log('👷Multiple Attack Penalty set to tier', tier) }
 
   // Universal
-  addText(text: string) { console.log(`Adding "${text}" to whatever context we are in`) }
-  giveNotesField(text: string) { console.log(`Adding a fancy note field for '${text}'`) }
-  defineVariable(name: string, type: string) { console.log('Defining', name, type) }
-  setVariable(name: string, mutator: string|null, value:string[]|string|null) { console.log('Setting', name, mutator, value) }
-  setKeyAbility(abilities:Ability[]) { console.log('Choice of key ability among', abilities, abilities.length === 1 ? 'which is actually not a choice since it is only one' : '') }
-  hideFeatName(name: string) { console.log('Hiding feat', name) }
-  overrideFeatLevel(name: string, level: number) { console.log('Overriding feat level', name, level) }
+  addText(text: string) { console.log(`👷Adding "${text}" to whatever context we are in`) }
+  giveNotesField(text: string) { console.log(`👷Adding a fancy note field for '${text}'`) }
+  defineVariable(name: string, type: string) { console.log('👷Defining', name, type) }
+  setVariable(name: string, mutator: string|null, value:string[]|string|null) { console.log('👷Setting', name, mutator, value) }
+  setKeyAbility(abilities:Ability[]) { console.log('👷Choice of key ability among', abilities, abilities.length === 1 ? 'which is actually not a choice since it is only one' : '') }
+  hideFeatName(name: string) { console.log('👷Hiding feat', name) }
+  overrideFeatLevel(name: string, level: number) { console.log('👷Overriding feat level', name, level) }
 }
 
 export const statementCallProcessor = new StatementCallProcessorImplementation() satisfies StatementCallProcessor & SupportedStatements as StatementCallProcessor & SupportedStatements;

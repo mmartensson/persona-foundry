@@ -44,6 +44,10 @@ The `package.json` is severly lacking in the `"scripts"` department. Code genera
 
 The parsers are able to handle most, but not all typos and bugs in the database. Any valid code/text should pass fine. Most of the text is rendered properly and a reasonable subset of the code is fully wired up.
 
+## Screenshots
+
+![Example Sheet](screenshots/sheet1.png)
+
 ---
 
 This website uses trademarks and/or copyrights owned by Paizo Inc., which are used under Paizo's Community Use Policy (<https://paizo.com/communityuse>). We are expressly prohibited from charging you to use or access this content. This website is not published, endorsed, or specifically approved by Paizo Inc. For more information about Paizo Inc. and Paizo products, visit paizo.com.

@@ -154,10 +154,10 @@ export class PFSelectionCard extends LitElement {
         container-type: inline-size;
 
         --button-primary-fg: var(--button-fg);
-        --button-primary-bg: hsla(var(--button-bg-hsl), .5);
+        --button-primary-bg: hsla(var(--button-bg-hsl), .8);
         --button-primary-border: solid 2px hsla(var(--button-bg-hsl), .8);
         --button-secondary-fg: var(--field-fg);
-        --button-secondary-bg: hsla(var(--field-bg-hsl), .5);
+        --button-secondary-bg: hsla(var(--field-bg-hsl), .8);
         --button-secondary-border: solid 2px hsla(var(--field-bg-hsl), .8);      
       }
 
@@ -200,10 +200,9 @@ export class PFSelectionCard extends LitElement {
         border: var(--button-secondary-border);
         color: var(--button-secondary-fg);
         background: var(--button-secondary-bg);
-
+        opacity: 0.5;
         flex-grow: 1;
         padding: 16px 0;
-
         margin-bottom: -2rem;
       }
       footer button.choose {
@@ -218,6 +217,9 @@ export class PFSelectionCard extends LitElement {
       footer button:last-child {
         border-bottom-right-radius: 32px;
         margin-right: -2rem;
+      }
+      footer button:hover {
+        opacity: 1;
       }
     `
   ];

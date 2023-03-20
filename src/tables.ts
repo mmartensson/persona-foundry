@@ -123,7 +123,7 @@ export class TableLookup<T extends MinimalLookupTable> {
 
   byId(id: T[number]['id']): T[number] {
     const row = this.idMap.get(id);
-    if (!row) throw Error('Specifying an strictly typed ID should have produced a table row; none was found');
+    if (!row) throw Error('Specifying an strictly typed ID should have produced a table row; none was found for ' + id);
     return row;
   }
 

@@ -79,7 +79,7 @@ export type Feat  = readonly [name:string, ...traits:Trait[]];
 // The language.ts and skill.ts do not have WSCI code blocks inside of it, so we can 
 // base types on their contents without risking circular issues.
 
-export type SignedAdjustment = `${'+'|'-'}${number}`;
+export type SignedAdjustment = `${'+'|'-'}${number}` | null;
 
 export type StatAdjustType = 'status' | 'circumstance' | 'class' | 'heritage' | 'life-mystery' | 'item-hide';
 

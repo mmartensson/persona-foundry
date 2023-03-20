@@ -198,7 +198,6 @@ export class PFSheet extends LitElement {
         if (loreProfs.length <= loreIndex) return;
 
         const loreProf = loreProfs[loreIndex];
-        console.log('LORE? ', skill, loreIndex, loreProf);
 
         scribbles.push(
           text(1150, y, 185, 50, `${loreProf.displayName} Lore`, loreProf.displayName),

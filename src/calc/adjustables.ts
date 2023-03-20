@@ -163,9 +163,17 @@ export class AdjustableProficiencies {
     this.registerGroup('spellcasting', 'Spell Casting', false);
     this.registerGroup('other', 'Other', true);
 
+    this.registerGroup('weapons', 'Weapons', true);
+    this.registerGroup('weapongroups', 'Weapon Groups', true);
+
     // SKILLS
     skills.forEach(skill => {
-      this.registerProficiency(skill.name.toLowerCase(), skill.name, 'skills', skill.ability);
+      const nlc = skill.name.toLowerCase();
+      if (nlc === 'lore') {
+        // Intentionally skipping the "generic" lore; will always need a qualifier
+        return;
+      }
+      this.registerProficiency(nlc, skill.name, 'skills', skill.ability);
     });
 
     // SAVES
@@ -224,6 +232,10 @@ export class AdjustableProficiencies {
   }
   groups(): ProficiencyGroupMetadata[] {
     return structuredClone(Object.values(this.#groups));
+  }
+
+  isRegistered(name: string) {
+    return !!this.#profs[name];
   }
 
   adjustableRankOf(name: string) {

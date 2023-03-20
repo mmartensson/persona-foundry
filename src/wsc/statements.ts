@@ -1,5 +1,5 @@
 import { feats, isFeatID, FeatsTableRow } from '../data/feats';
-import { tags, TagID, isTagID } from '../data/tags';
+import { tags, TagID } from '../data/tags';
 import { languages } from '../data/languages';
 import { AbilityChoice, FeatChoice, Rank, currentClass, currentlyMadeChoice } from '../state';
 import { CalculatedSheet } from '../calc/sheet';
@@ -10,6 +10,7 @@ import type { Ability, Feat, Level,
 import { Language, Skill, abilityNames, isAbility } from '../tables';
 import { sensetypes } from '../data/sensetypes';
 import { physicalfeatures } from '../data/physicalfeatures';
+import { items } from '../data/items';
 
 const assertDefined: <T>(v: T) => asserts v is NonNullable<T> = v => { if (v === undefined) throw new Error() }
 const namedTrait = (n: string) => { const t = tags.byNameUnique(n); assertDefined(t); return t }
@@ -347,11 +348,68 @@ class StatementCallProcessorImplementation implements StatementCallProcessor, Su
   giveLang() { console.log('👷Free choice of language') }
 
   // Proficiencies
-  giveProfIn(prof: string, rank: Rank) {
+
+  // Returns a massaged proficiency name for use with #sheet.proficiencies; will register
+  // if necessary, but will not be adjusting rank.
+  #proficiencyRegisteredName(rawName: string) {
+    const [base, detail] = rawName.split('~', 2);
+
+    const rlc = rawName.toLowerCase();
+    const blc = base.toLowerCase();
+
+    if (!detail) {
+      // Assuming this is already known and registered
+      return blc;
+    }
+
+    const dlc = detail.toLowerCase();
+    const sp = this.#sheet.proficiencies;
+
+    if (!sp.isRegistered(rlc) && !sp.isRegistered(blc)) {
+      if (blc === 'weapon') {
+        const item = items.byNameUnique(dlc);
+        const displayName = item?.name ?? detail;
+
+        // Weapons are associated with STR for melee (unless setFinesseMeleeUseDexDamage is
+        // applicable) or DEX for ranged.
+        
+        // FIXME: Not obvious from `items` what counts as ranged. 
+        //        Looking for Volley/Scatter in item traits referenced via tagIDs could be a way
+        //        of determining what is a ranged weapon.
+        const ability = 'STR';
+
+        sp.registerProficiency(dlc, displayName, 'weapons', ability);
+        return dlc;
+      }
+
+      if (blc === 'group') {
+        const weapongroup = detail.toLowerCase();
+        // These seem to exclusively be groups of ranged weapons
+        const ability = 'DEX';
+
+        sp.registerProficiency(weapongroup, detail, 'weapongroups', ability);
+        return dlc;
+      }
+
+      if (blc === 'lore') {
+        sp.registerProficiency(rlc, detail, 'skills', 'INT');
+      }
+
+      if (blc === 'trait') {
+        sp.registerProficiency(rlc, detail, 'other');
+      }
+    }
+
+    return rlc;
+  }
+
+  giveProfIn(rawName: string, rank: Rank) {
+    const prof = this.#proficiencyRegisteredName(rawName);
     this.#sheet.proficiencies.adjustRank(prof, rank, this.#ref, this.#description);
   }
 
-  giveProfIncreaseIn(prof: string) {
+  giveProfIncreaseIn(rawName: string) {
+    const prof = this.#proficiencyRegisteredName(rawName);
     this.#sheet.proficiencies.adjustRank(prof, 'increase', this.#ref, this.#description);
   }
 
@@ -361,16 +419,7 @@ class StatementCallProcessorImplementation implements StatementCallProcessor, Su
 
   // Lore
   giveLore(lore: string) {
-    console.log(`👷Giving lore ${lore}`);
-
-    const prof = `lore~${lore.toLowerCase()}`;
-    const currentProfs = this.#sheet.proficiencies.list();
-    if (currentProfs.some(p => p.name === prof)) {
-      // Already have the lore/knowledge registered, and GIVE-LORE does not automatically upgrade
-      return;
-    }
-
-    this.#sheet.proficiencies.registerProficiency(prof, lore, 'skills', 'INT');
+    const prof = this.#proficiencyRegisteredName(`lore~${lore}`);
     this.#sheet.proficiencies.adjustRank(prof, 'increase', this.#ref, this.#description);
   }
   
@@ -468,10 +517,17 @@ class StatementCallProcessorImplementation implements StatementCallProcessor, Su
 
   // Sheet / Misc
   displayCompanionTab() { console.log('👷Displaying companion tab') }
-  giveWeaponFamiliarity(type: string) { console.log(`👷Giving familiarity with ${type} weapons`) }
+  giveWeaponFamiliarity(trait: string) {
+    console.log(`👷Giving familiarity with weapons tagged with ${trait}`);
+    // Meaning martial weapons with the trait are simple weapons and advanced 
+    // weapons with the trait are martial weapons when calculating proficiency.
+  }
   setImprovisedWeaponNoPenalty() { console.log('👷No penalty for improvised weapons') }
   setAddLevelToUntrainedWeapons() { console.log('👷Bonus to untrained weapons based on level') }
-  setFinesseMeleeUseDexDamage() { console.log('👷Finesse melee using DEX for damage') }
+  setFinesseMeleeUseDexDamage() {
+    console.log('👷Finesse melee using DEX for damage');
+    // Probably need a BooleanAdjustable on the sheet for flags in general
+  }
   sheetConcealFeatName(name: string) { console.log('👷Hiding the feat', name) }
   setSize(size: Size) { console.log('👷Setting size to', size) }
   setMap(tier: number) { console.log('👷Multiple Attack Penalty set to tier', tier) }
